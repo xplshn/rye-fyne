@@ -48,14 +48,24 @@ jobs:
 
       - name: Determine version and IDs
         id: meta
+        shell: sh
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${TAG#v}"
+          set -e
+          case "$GITHUB_REF" in
+            refs/tags/v*)
+              TAG="${GITHUB_REF#refs/tags/}"
+              VERSION="${TAG#v}"
+              ;;
+            *)
+              echo "Error: This workflow must be triggered by a v* tag (got $GITHUB_REF)" >&2
+              exit 1
+              ;;
+          esac
           DATE=$(date +%Y%m%d)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "date=${DATE}" >> $GITHUB_OUTPUT
-          echo "appbundle_id=rye-fyne#xplshn:${VERSION}@${DATE}" >> $GITHUB_OUTPUT
-          echo "output_name=rye-fyne-${VERSION}-${DATE}-amd64.dwfs.AppBundle" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "appbundle_id=rye-fyne#xplshn:${VERSION}@${DATE}" >> "$GITHUB_OUTPUT"
+          echo "output_name=rye-fyne-${VERSION}-${DATE}-amd64.dwfs.AppBundle" >> "$GITHUB_OUTPUT"
 
       - name: Build rye-fyne
         run: |
