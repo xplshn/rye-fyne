@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Install build deps
         run: |
-          doas apk add go gcc libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev linux-headers mesa-dev libxkbcommon-dev wayland-dev
+          apk add go gcc libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev linux-headers mesa-dev libxkbcommon-dev wayland-dev
 
       - uses: actions/checkout@v4
         with:
