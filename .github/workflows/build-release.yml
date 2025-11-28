@@ -154,14 +154,6 @@ jobs:
         with:
           name: rye-fyne-macos
 
-      - name: Prepare release assets for meme OSes
-        run: |
-          # Windows
-          mv rye-fyne-windows/rye-fyne.exe .
-          # macOS
-          tar xf rye-fyne-macos-amd64.tar.gz
-          mv rye-fyne rye-fyne-macos-amd64
-
       - uses: softprops/action-gh-release@v2
         with:
           files: |
