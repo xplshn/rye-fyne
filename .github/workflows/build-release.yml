@@ -43,14 +43,13 @@ jobs:
             git wget curl file
 
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Determine version and IDs
         id: meta
         shell: sh
         run: |
           set -e
+          git config --global --add safe.directory '*'
           
           DATE=$(date +%Y%m%d)
           SHORT=$(git rev-parse --short=7 HEAD | cut -c1-4 | tr '[:lower:]' '[:upper:]')
@@ -82,7 +81,7 @@ jobs:
           go install fyne.io/fyne/v2/cmd/fyne@latest
           go mod tidy
           go tool ryegen
-          go build -buildvcs=false -trimpath -ldflags="-s -w" -o rye-fyne
+          go build -trimpath -ldflags="-s -w" -o rye-fyne
 
       - name: Create classic portable tar.gz
         run: |
