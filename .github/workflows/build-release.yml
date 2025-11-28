@@ -34,13 +34,28 @@ jobs:
     container:
       image: alpine:latest
     steps:
-      - name: Install build deps
+      - name: Install build dependencies
         run: |
-          apk add go gcc libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev linux-headers mesa-dev libxkbcommon-dev wayland-dev
+          apk add --no-cache \
+            go gcc \
+            libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev \
+            linux-headers mesa-dev libxkbcommon-dev wayland-dev \
+            git wget curl file
 
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Determine version and IDs
+        id: meta
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          DATE=$(date +%Y%m%d)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "appbundle_id=rye-fyne#xplshn:${VERSION}@${DATE}" >> $GITHUB_OUTPUT
+          echo "output_name=rye-fyne-${VERSION}-amd64.dwfs.AppBundle" >> $GITHUB_OUTPUT
 
       - name: Build rye-fyne
         run: |
@@ -49,15 +64,46 @@ jobs:
           go tool ryegen
           go build -trimpath -ldflags="-s -w" -o rye-fyne
 
-      - name: Strip and archive
+      - name: Prepare assets (icon + .desktop)
+        run: |
+          # Assumes rye.png and rye.desktop are in repo root
+          cp rye.png rye.desktop .
+
+      - name: Create classic portable tar.gz
         run: |
           strip --strip-unneeded rye-fyne
           tar czf rye-fyne-linux-amd64.tar.gz rye-fyne
 
-      - uses: actions/upload-artifact@v4
+      - name: Build .dwfs.AppBundle
+        run: |
+          # Fetch quick-sharun
+          wget -qO /tmp/quick-sharun https://raw.githubusercontent.com/pkgforge-dev/Anylinux-AppImages/refs/heads/main/useful-tools/quick-sharun.sh
+          chmod +x /tmp/quick-sharun
+
+          # Prepare binary for sharun
+          cp ./rye-fyne ./rye
+
+          # Generate AppDir (ensures AppRun executable)
+          ICON="./rye.png" DESKTOP="./rye.desktop" /tmp/quick-sharun ./rye
+
+          # Fetch latest pelf for this arch
+          wget -qO ./pelf "https://github.com/xplshn/pelf/releases/latest/download/pelf_$(uname -m)"
+          chmod +x ./pelf
+
+          # Package the AppDir into .dwfs.AppBundle
+          ./pelf --add-appdir "./AppDir" \
+                 --output-to "${{ steps.meta.outputs.output_name }}" \
+                 --appbundle-id "${{ steps.meta.outputs.appbundle_id }}" \
+                 --filesystem dwarfs \
+                 --run-behavior 3
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: rye-fyne-linux
-          path: rye-fyne-linux-amd64.tar.gz
+          path: |
+            rye-fyne-linux-amd64.tar.gz
+            rye-fyne-*.dwfs.AppBundle
 
   build-macos:
     runs-on: macos-latest
@@ -92,18 +138,24 @@ jobs:
         with:
           name: rye-fyne-macos
 
-      - name: Extract binaries for release
+      - name: Prepare release assets
         run: |
-          tar xf rye-fyne-linux-amd64.tar.gz
-          mv rye-fyne rye-fyne-linux-amd64
+          # tar.gz
+          mv rye-fyne-linux-amd64.tar.gz .
+          # .dwfs.AppBundle
+          mv rye-fyne-*.dwfs.AppBundle .
+          # Windows
           mv rye-fyne-windows/rye-fyne.exe .
-          mv rye-fyne-macos/rye-fyne rye-fyne-macos-amd64
+          # macOS
+          tar xf rye-fyne-macos-amd64.tar.gz
+          mv rye-fyne rye-fyne-macos-amd64
 
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             rye-fyne.exe
-            rye-fyne-linux-amd64
+            rye-fyne-linux-amd64.tar.gz
+            rye-fyne-*.dwfs.AppBundle
             rye-fyne-macos-amd64
           name: Release ${{ github.ref_name }}
         env:
