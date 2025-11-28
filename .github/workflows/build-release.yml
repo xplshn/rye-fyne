@@ -64,11 +64,6 @@ jobs:
           go tool ryegen
           go build -buildvcs=false -trimpath -ldflags="-s -w" -o rye-fyne
 
-      - name: Prepare assets (icon + .desktop)
-        run: |
-          # Assumes rye.png and rye.desktop are in repo root
-          cp rye.png rye.desktop .
-
       - name: Create classic portable tar.gz
         run: |
           strip --strip-unneeded rye-fyne
