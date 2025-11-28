@@ -32,7 +32,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     container:
-      image: alpine:latest
+      image: alpine:edge
     steps:
       - name: Install build dependencies
         run: |
