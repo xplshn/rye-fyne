@@ -154,12 +154,8 @@ jobs:
         with:
           name: rye-fyne-macos
 
-      - name: Prepare release assets
+      - name: Prepare release assets for meme OSes
         run: |
-          # tar.gz
-          mv rye-fyne-linux-amd64.tar.gz .
-          # .dwfs.AppBundle
-          mv rye-fyne-*.dwfs.AppBundle .
           # Windows
           mv rye-fyne-windows/rye-fyne.exe .
           # macOS
@@ -169,10 +165,10 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            rye-fyne.exe
-            rye-fyne-linux-amd64.tar.gz
             rye-fyne-*.dwfs.AppBundle
+            rye-fyne-linux-amd64.tar.gz
             rye-fyne-macos-amd64
+            rye-fyne.exe
           name: Release ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
