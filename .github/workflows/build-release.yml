@@ -55,7 +55,7 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "date=${DATE}" >> $GITHUB_OUTPUT
           echo "appbundle_id=rye-fyne#xplshn:${VERSION}@${DATE}" >> $GITHUB_OUTPUT
-          echo "output_name=rye-fyne-${VERSION}-amd64.dwfs.AppBundle" >> $GITHUB_OUTPUT
+          echo "output_name=rye-fyne-${VERSION}-${DATE}-amd64.dwfs.AppBundle" >> $GITHUB_OUTPUT
 
       - name: Build rye-fyne
         run: |
