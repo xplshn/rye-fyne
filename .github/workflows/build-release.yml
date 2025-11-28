@@ -139,28 +139,35 @@ jobs:
         with:
           name: rye-fyne-macos
           path: rye-fyne-macos-amd64.tar.gz
-
+ 
   release:
-    needs: [build-linux, build-windows, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: rye-fyne-linux
-      - uses: actions/download-artifact@v4
-        with:
-          name: rye-fyne-windows
-      - uses: actions/download-artifact@v4
-        with:
-          name: rye-fyne-macos
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            rye-fyne-*.dwfs.AppBundle
-            rye-fyne-linux-amd64.tar.gz
-            rye-fyne-macos-amd64
-            rye-fyne.exe
-          name: Release ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      needs: [build-linux, build-windows, build-macos]
+      runs-on: ubuntu-latest
+      # Only run the release job when we actually have a tag OR when manually triggered on main/master
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      steps:
+        - uses: actions/download-artifact@v4
+          with:
+            path: artifacts
+            
+        - name: Flatten artifacts for release
+          run: |
+            mv artifacts/rye-fyne-linux/* .
+            mv artifacts/rye-fyne-windows/* .
+            mv artifacts/rye-fyne-macos/* .
+            
+        - name: Create release
+          uses: softprops/action-gh-release@v2
+          with:
+            files: |
+              rye-fyne-*.dwfs.AppBundle
+              rye-fyne-linux-amd64.tar.gz
+              rye-fyne-macos-amd64.tar.gz
+              rye-fyne.exe
+            tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('nightly-{0}', github.run_id) }}
+            name: ${{ github.ref_type == 'tag' && github.ref_name || format('Nightly Build {0}', github.run_id) }}
+            draft: false
+            prerelease: ${{ github.ref_type != 'tag' }}
+            generate_release_notes: true
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
